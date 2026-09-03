@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: personal-finance-tracker
+    runtime: docker
+    plan: free
+    region: singapore
+
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+
+    healthCheckPath: /_stcore/health
+    autoDeployTrigger: commit
+
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+
+      - key: SUPABASE_SECRET_KEY
+        sync: false

@@ -1,0 +1,14 @@
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false
+
+[client]
+showSidebarNavigation = false
+toolbarMode = "minimal"
+showErrorDetails = "none"
+showErrorLinks = false
+
+[theme]
+primaryColor = "#2E8B57"
