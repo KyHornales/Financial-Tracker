@@ -9,12 +9,22 @@ create table if not exists public.users (
     created_at timestamptz not null default now()
 );
 
+-- Add theme columns with default colors for existing users
+alter table public.users add column if not exists theme_primary text not null default '#FF4B4B';
+alter table public.users add column if not exists theme_secondary text not null default '#E8E8E8';
+alter table public.users add column if not exists theme_bg text not null default '#FFFFFF';
+alter table public.users add column if not exists theme_text text not null default '#31333F';
+
+
+
 alter table public.users alter column id set default gen_random_uuid();
 
 alter table public.users add column if not exists display_name_normalized text;
 alter table public.users add column if not exists pin_hash text;
 alter table public.users add column if not exists failed_login_attempts integer not null default 0;
 alter table public.users add column if not exists locked_until timestamptz;
+
+
 
 -- Safely upgrade plaintext PINs created by the original prototype.
 do $$

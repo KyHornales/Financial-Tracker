@@ -240,7 +240,20 @@ def render_themed_dataframe(dataframe: pd.DataFrame, **kwargs) -> None:
     st.table(styled)
 
 
+def save_current_theme(user_id: str) -> None:
+    update_theme(
+        user_id,
+        st.session_state.get("theme_primary", "#FF4B4B"),
+        st.session_state.get("theme_secondary", "#E8E8E8"),
+        st.session_state.get("theme_bg", "#FFFFFF"),
+        st.session_state.get("theme_text", "#31333F"),
+    )
+
+
 def logout() -> None:
+    current_user_id = st.session_state.get("user_id")
+    if current_user_id:
+        save_current_theme(current_user_id)
     st.session_state["user_id"] = None
     st.session_state["user_name"] = None
     st.session_state["selected_period_id"] = None
@@ -347,7 +360,12 @@ with theme_col:
     if st.button("Customize Theme", use_container_width=True):
         theme_dialog()
 with logout_col:
-    st.button("Log out", on_click=logout, use_container_width=True)
+    if st.button("Log out", use_container_width=True):
+        try:
+            logout()
+            st.rerun()
+        except FinancialTrackerError as exc:
+            st.error(str(exc))
 
 period_col, state_col = st.columns(2)
 with period_col:
