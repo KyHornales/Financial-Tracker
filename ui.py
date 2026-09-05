@@ -11,9 +11,15 @@ def initialize_session() -> None:
     st.session_state.setdefault("user_id", None)
     st.session_state.setdefault("user_name", None)
     st.session_state.setdefault("selected_period_id", None)
+    st.session_state.setdefault("theme_primary", "#FF4B4B")
+    st.session_state.setdefault("theme_secondary", "#E8E8E8")
+    st.session_state.setdefault("theme_bg", "#FFFFFF")
+    st.session_state.setdefault("theme_text", "#31333F")
 
 
 def format_currency(value) -> str:
+    if value is None:
+        return "₱0.00"
     return f"₱{float(value):,.2f}"
 
 

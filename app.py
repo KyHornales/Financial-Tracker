@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from services.analytics import get_closed_periods, get_historical_transactions
-from services.auth import authenticate_user, register_user
+from services.auth import authenticate_user, register_user, update_theme
 from services.budgets import (
     GROUPS,
     delete_budget,
@@ -20,7 +20,11 @@ from services.calculations import (
 from services.common import AuthenticationError, FinancialTrackerError
 from services.income import delete_income, get_incomes, log_incomes_batch, update_income
 from services.notes import NOTE_TYPES, add_note, delete_note, get_notes
-from services.periods import can_set_initial_balances, create_period, set_initial_balances
+from services.periods import (
+    can_set_initial_balances,
+    create_period,
+    set_initial_balances,
+)
 from services.transactions import (
     delete_transaction,
     get_budget_performance,
@@ -45,10 +49,23 @@ st.set_page_config(
 initialize_session()
 
 st.markdown(
-    """
+    f"""
     <style>
-    .block-container {max-width: 1380px; padding-top: 2rem; padding-bottom: 4rem;}
-    div.stButton > button {
+    /* 1. Global App Colors */
+    .stApp {{
+        background-color: {st.session_state.get("theme_bg", "#FFFFFF")};
+    }}
+    
+    /* Force text elements to use the chosen text color */
+    h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, .week-status-label {{
+        color: {st.session_state.get("theme_text", "#31333F")} !important;
+    }}
+
+    /* 2. Your existing layout */
+    .block-container {{max-width: 1380px; padding-top: 2rem; padding-bottom: 4rem;}}
+    
+    /* 3. Buttons and dashboard tabs use the primary color */
+    div.stButton > button {{
         width: 100%;
         height: 3.25rem;
         display: flex;
@@ -56,17 +73,110 @@ st.markdown(
         justify-content: center;
         text-align: center;
         font-weight: 600;
-    }
-    [data-testid="stMetric"] {border: 1px solid rgba(128,128,128,.22); border-radius: .8rem; padding: .85rem;}
-    [data-testid="stMetricValue"] {
+        color: white !important;
+        border-color: {st.session_state.get("theme_primary", "#FF4B4B")} !important;
+        background-color: {st.session_state.get("theme_primary", "#FF4B4B")} !important;
+    }}
+
+    div.stButton > button:hover,
+    div.stButton > button[kind="primary"]:hover {{
+        background-color: {st.session_state.get("theme_primary", "#FF4B4B")} !important;
+        filter: brightness(0.9);
+    }}
+
+    /* Target primary buttons (like 'Save' or 'Log in') */
+    div.stButton > button[kind="primary"] {{
+        background-color: {st.session_state.get("theme_primary", "#FF4B4B")} !important;
+        color: white !important; /* Keep primary text white for contrast */
+        border: none;
+    }}
+
+    button[data-baseweb="tab"] {{
+        color: {st.session_state.get("theme_primary", "#FF4B4B")} !important;
+    }}
+    button[data-baseweb="tab"][aria-selected="true"] {{
+        color: {st.session_state.get("theme_primary", "#FF4B4B")} !important;
+        border-bottom-color: {st.session_state.get("theme_primary", "#FF4B4B")} !important;
+    }}
+
+    /* 4. Dashboard table styling: primary headers, secondary values */
+    /* Target all table elements */
+    table {{
+        background-color: {st.session_state.get("theme_bg", "#FFFFFF")} !important;
+        width: 100% !important;
+    }}
+    
+    /* Style table headers */
+    table thead {{
+        background-color: {st.session_state.get("theme_primary", "#FF4B4B")} !important;
+    }}
+    
+    table thead th {{
+        background-color: {st.session_state.get("theme_primary", "#FF4B4B")} !important;
+        color: white !important;
+        font-weight: bold !important;
+        padding: 10px !important;
+        border-color: {st.session_state.get("theme_primary", "#FF4B4B")} !important;
+    }}
+
+    /* Streamlit's dataframe grid uses ARIA roles instead of HTML table cells. */
+    [data-testid="stDataFrame"] [role="columnheader"] {{
+        background-color: {st.session_state.get("theme_primary", "#FF4B4B")} !important;
+        color: white !important;
+    }}
+    [data-testid="stDataFrame"] [role="gridcell"] {{
+        background-color: {st.session_state.get("theme_secondary", "#E8E8E8")} !important;
+        color: {st.session_state.get("theme_text", "#31333F")} !important;
+    }}
+    
+    /* Style table body */
+    table tbody {{
+        background-color: {st.session_state.get("theme_secondary", "#E8E8E8")} !important;
+    }}
+    
+    table tbody tr {{
+        background-color: {st.session_state.get("theme_secondary", "#E8E8E8")} !important;
+    }}
+    
+    table tbody td {{
+        color: {st.session_state.get("theme_text", "#31333F")} !important;
+        background-color: {st.session_state.get("theme_secondary", "#E8E8E8")} !important;
+        padding: 10px !important;
+        border-color: rgba(128,128,128,.15) !important;
+    }}
+    
+    /* Alternate row colors for better readability */
+    table tbody tr:nth-child(odd) td {{
+        background-color: {st.session_state.get("theme_secondary", "#E8E8E8")} !important;
+    }}
+    
+    table tbody tr:hover td {{
+        background-color: {st.session_state.get("theme_secondary", "#E8E8E8")} !important;
+        filter: brightness(0.9);
+    }}
+
+    /* 5. Metrics */
+    [data-testid="stMetric"] {{
+        border: 1px solid rgba(128,128,128,.22); 
+        border-radius: .8rem; 
+        padding: .85rem;
+        background-color: {st.session_state.get("theme_primary", "#FF4B4B")};
+    }}
+    [data-testid="stMetricValue"] {{
         white-space: nowrap;
         overflow: visible;
-    }
-    .week-status-label {
+        color: {st.session_state.get("theme_text", "#31333F")};
+    }}
+    [data-testid="stMetricLabel"] {{
+        color: {st.session_state.get("theme_text", "#31333F")};
+    }}
+    
+    /* 6. Status boxes */
+    .week-status-label {{
         font-size: .875rem;
         margin-bottom: .42rem;
-    }
-    .week-status-box {
+    }}
+    .week-status-box {{
         min-height: 2.5rem;
         padding: 0 .8rem;
         border: 1px solid rgba(128,128,128,.35);
@@ -76,15 +186,58 @@ st.markdown(
         gap: .55rem;
         font-weight: 600;
         background: rgba(128,128,128,.04);
-    }
-    .week-status-box.open {border-color: rgba(35,170,90,.65);}
-    .week-status-box.closed {border-color: rgba(220,70,70,.65);}
-    .week-status-dot.open {color: rgb(35,170,90);}
-    .week-status-dot.closed {color: rgb(220,70,70);}
+    }}
+    .week-status-box.open {{border-color: rgba(35,170,90,.65);}}
+    .week-status-box.closed {{border-color: rgba(220,70,70,.65);}}
+    .week-status-dot.open {{color: rgb(35,170,90);}}
+    .week-status-dot.closed {{color: rgb(220,70,70);}}
     </style>
     """,
     unsafe_allow_html=True,
 )
+
+
+def render_themed_dataframe(dataframe: pd.DataFrame, **kwargs) -> None:
+    primary = st.session_state.get("theme_primary", "#FF4B4B")
+    body_color = st.session_state.get("theme_secondary", "#E8E8E8")
+    text = st.session_state.get("theme_text", "#31333F")
+    column_config = kwargs.pop("column_config", {}) or {}
+    hide_index = kwargs.pop("hide_index", False)
+    kwargs.pop("use_container_width", None)
+
+    labels = {}
+    for column, config in column_config.items():
+        if isinstance(config, str):
+            labels[column] = config
+        else:
+            labels[column] = getattr(config, "label", column)
+    display_dataframe = dataframe.rename(columns=labels)
+    currency_columns = {
+        column: "₱{:,.2f}"
+        for column in display_dataframe.select_dtypes(include="number").columns
+    }
+
+    styled = (
+        display_dataframe.style.set_properties(
+            **{"color": text, "background-color": body_color}
+        )
+        .format(currency_columns)
+        .set_table_styles(
+            [
+                {
+                    "selector": "thead th",
+                    "props": [
+                        ("background-color", primary),
+                        ("color", "white"),
+                        ("font-weight", "bold"),
+                    ],
+                }
+            ]
+        )
+    )
+    if hide_index:
+        styled = styled.hide(axis="index")
+    st.table(styled)
 
 
 def logout() -> None:
@@ -108,11 +261,17 @@ def show_login() -> None:
                 user = authenticate_user(name, pin)
                 st.session_state["user_id"] = user["id"]
                 st.session_state["user_name"] = user["display_name"]
+                st.session_state["theme_primary"] = user.get("theme_primary", "#FF4B4B")
+                st.session_state["theme_secondary"] = user.get(
+                    "theme_secondary", "#E8E8E8"
+                )
+                st.session_state["theme_bg"] = user.get("theme_bg", "#FFFFFF")
+                st.session_state["theme_text"] = user.get("theme_text", "#31333F")
                 st.rerun()
             except (AuthenticationError, FinancialTrackerError) as exc:
                 st.error(str(exc))
-            except Exception:
-                st.error("The dashboard is unavailable right now. Please try again later.")
+            except Exception as e:
+                st.error(f"The dashboard is unavailable right now. Error: {str(e)}")
 
     with register_tab:
         with st.form("register_form"):
@@ -132,7 +291,45 @@ def show_login() -> None:
                 except FinancialTrackerError as exc:
                     st.error(str(exc))
                 except Exception:
-                    st.error("The profile could not be created. Please try again later.")
+                    st.error(
+                        "The profile could not be created. Please try again later."
+                    )
+
+
+@st.dialog("Customize Theme Colors", width="small")
+def theme_dialog() -> None:
+    st.write("Personalize how your dashboard looks.")
+
+    new_primary = st.color_picker(
+        "Primary Color (buttons & table headers)",
+        st.session_state.get("theme_primary", "#FF4B4B"),
+    )
+    new_secondary = st.color_picker(
+        "Secondary Color (table background)",
+        st.session_state.get("theme_secondary", "#E8E8E8"),
+    )
+    new_bg = st.color_picker(
+        "Background Color", st.session_state.get("theme_bg", "#FFFFFF")
+    )
+    new_text = st.color_picker(
+        "Text Color", st.session_state.get("theme_text", "#31333F")
+    )
+
+    if st.button("Apply & Save", type="primary"):
+        try:
+            # 1. Save to database permanently
+            update_theme(user_id, new_primary, new_secondary, new_bg, new_text)
+
+            # 2. Update current active session
+            st.session_state["theme_primary"] = new_primary
+            st.session_state["theme_secondary"] = new_secondary
+            st.session_state["theme_bg"] = new_bg
+            st.session_state["theme_text"] = new_text
+
+            # 3. Reload screen
+            st.rerun()
+        except Exception:
+            st.error("Could not save theme. Please try again.")
 
 
 if not st.session_state.get("user_id"):
@@ -142,10 +339,13 @@ if not st.session_state.get("user_id"):
 user_id = st.session_state["user_id"]
 user_name = st.session_state["user_name"]
 
-title_col, logout_col = st.columns([6, 1])
+title_col, theme_col, logout_col = st.columns([5, 1, 1])
 with title_col:
     st.title(f"Hello, {user_name}")
     st.caption("Here is the complete story of your money for the week.")
+with theme_col:
+    if st.button("Customize Theme", use_container_width=True):
+        theme_dialog()
 with logout_col:
     st.button("Log out", on_click=logout, use_container_width=True)
 
@@ -436,7 +636,9 @@ def budget_dialog() -> None:
             item for item in budgets if item["id"] not in used_budget_ids
         ]
         removable_labels = {
-            item["id"]: f"{item['category_name']} — {format_currency(item['allocated_amount'])}"
+            item[
+                "id"
+            ]: f"{item['category_name']} — {format_currency(item['allocated_amount'])}"
             for item in removable_budgets
         }
         if removable_labels:
@@ -606,7 +808,9 @@ def note_dialog() -> None:
     if notes:
         st.divider()
         labels = {
-            item["id"]: f"{item['note_type']} · {item.get('category_name') or 'General'}"
+            item[
+                "id"
+            ]: f"{item['note_type']} · {item.get('category_name') or 'General'}"
             for item in notes
         }
         note_id = st.selectbox("Saved note", list(labels), format_func=labels.get)
@@ -617,7 +821,9 @@ def note_dialog() -> None:
 
 @st.dialog("Close this week", width="medium")
 def close_dialog() -> None:
-    st.write("Closing saves the final balances and permanently locks the financial entries.")
+    st.write(
+        "Closing saves the final balances and permanently locks the financial entries."
+    )
     st.metric("Money still unassigned", format_currency(summary["unallocated"]))
     if summary["unallocated"] < 0:
         st.error(
@@ -711,9 +917,7 @@ def history_dialog() -> None:
         merged = tx_df.merge(
             periods_df[["id", "Week"]], left_on="period_id", right_on="id"
         )
-        spending = merged[
-            merged["category_group"].isin(["Need", "Want", "Unbudgeted"])
-        ]
+        spending = merged[merged["category_group"].isin(["Need", "Want", "Unbudgeted"])]
         if not spending.empty:
             st.subheader("Actual spending over time")
             chart = (
@@ -791,7 +995,9 @@ transaction_clicked = action_cols[2].button(
     "Manage Spending", disabled=is_closed, use_container_width=True
 )
 note_clicked = action_cols[3].button("Add Note", use_container_width=True)
+
 secondary_cols = st.columns(4)
+
 close_clicked = secondary_cols[0].button(
     "Close Week", disabled=is_closed, use_container_width=True
 )
@@ -874,7 +1080,7 @@ with left:
     if incomes:
         income_df = pd.DataFrame(incomes)
         income_df["amount"] = pd.to_numeric(income_df["amount"])
-        st.dataframe(
+        render_themed_dataframe(
             income_df[["source_name", "amount"]],
             hide_index=True,
             use_container_width=True,
@@ -894,7 +1100,7 @@ with right:
         fixed_df["Status"] = fixed_df.apply(
             lambda row: fixed_expense_status(row["Budget"], row["Actual"]), axis=1
         )
-        st.dataframe(
+        render_themed_dataframe(
             fixed_df[["Category", "Budget", "Actual", "Status"]],
             hide_index=True,
             use_container_width=True,
@@ -909,7 +1115,7 @@ with right:
 st.subheader("3. Budget Plan vs Actual Expense")
 if performance:
     plan_df = pd.DataFrame(performance)
-    st.dataframe(
+    render_themed_dataframe(
         plan_df[["Group", "Category", "Type", "Budget", "Actual", "Remaining"]],
         hide_index=True,
         use_container_width=True,
@@ -930,7 +1136,7 @@ if expense_rows:
         "%m-%d-%Y"
     )
     expense_df["amount"] = pd.to_numeric(expense_df["amount"])
-    st.dataframe(
+    render_themed_dataframe(
         expense_df[["Date", "category_group", "category_name", "amount"]],
         hide_index=True,
         use_container_width=True,
@@ -949,7 +1155,7 @@ if notes:
     notes_df = pd.DataFrame(notes)
     notes_df["Category"] = notes_df["category_name"].fillna("Whole week")
     notes_df["Next time"] = notes_df["next_action"].fillna("—")
-    st.dataframe(
+    render_themed_dataframe(
         notes_df[["note_type", "Category", "note_text", "Next time"]],
         hide_index=True,
         use_container_width=True,
