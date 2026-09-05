@@ -32,9 +32,15 @@ def add_note(
 ) -> dict:
     # Notes are reflections, so they may also be added after a week is closed.
     require_period(user_id, period_id)
+
     if note_type not in NOTE_TYPES:
         raise FinancialTrackerError("Choose a valid note type.")
-    text = clean_label(note_text, "What happened")
+
+    # Strip whitespace directly instead of using clean_label
+    text = " ".join((note_text or "").strip().split())
+    if not text:
+        raise FinancialTrackerError("What happened cannot be empty.")
+
     if len(text) > 1000:
         raise FinancialTrackerError("The note must be 1,000 characters or fewer.")
 
@@ -55,6 +61,7 @@ def add_note(
     action = " ".join((next_action or "").strip().split()) or None
     if action and len(action) > 1000:
         raise FinancialTrackerError("The next step must be 1,000 characters or fewer.")
+
     payload = {
         "period_id": period_id,
         "budget_id": budget_id,
@@ -63,9 +70,9 @@ def add_note(
         "note_text": text,
         "next_action": action,
     }
+
     response = supabase.table("period_notes").insert(payload).execute()
     return response.data[0]
-
 
 def delete_note(user_id: str, period_id: str, note_id: str) -> None:
     require_period(user_id, period_id)
